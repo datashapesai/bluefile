@@ -192,6 +192,8 @@ pub fn read_ext_header<R: Read + Seek>(mut input: R, header: &Header) -> Result<
 
 /// Represents an extended header keyword value with the necessary information to render it from
 /// raw bytes.
+
+#[derive(Debug, Clone)]
 pub struct ExtKeywordValue {
     pub format: char,
     pub endianness: Endianness,
@@ -215,6 +217,7 @@ impl fmt::Display for ExtKeywordValue {
 }
 
 /// Extended header keyword.
+#[derive(Debug, Clone)]
 pub struct ExtKeyword {
     pub length: usize,
     pub tag: String,
@@ -417,8 +420,8 @@ fn parse_header_keywords(keywords: &mut Vec<HeaderKeyword>, v: &[u8], keylength:
 fn parse_type_code(v: &[u8], endianness: Endianness) -> Result<TypeCode> {
     let t = bytes_to_i32(v, endianness)?;
 
+    #[allow(clippy::manual_range_patterns)]
     match t / 1000 {
-        #![allow(clippy::manual_range_patterns)]
         1 | 2 | 3 | 4 | 5 | 6 => Ok(t as TypeCode),
         _ => Err(Error::UnknownFileTypeCode(t)),
     }
