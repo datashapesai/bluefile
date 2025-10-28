@@ -11,7 +11,6 @@
 //! ```
 
 use std::fmt;
-use std::fs::File;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
@@ -161,8 +160,8 @@ impl DataType {
 }
 
 /// Reads the extended header keywords.
-pub fn read_ext_header(mut file: &File, header: &Header) -> Result<Vec<ExtKeyword>> {
-    match file.seek(SeekFrom::Start(header.ext_start as u64)) {
+pub fn read_ext_header<R: Read + Seek>(mut input: R, header: &Header) -> Result<Vec<ExtKeyword>> {
+    match input.seek(SeekFrom::Start(header.ext_start as u64)) {
         Ok(x) => x,
         Err(_) => return Err(Error::ExtHeaderSeekError),
     };
@@ -172,7 +171,7 @@ pub fn read_ext_header(mut file: &File, header: &Header) -> Result<Vec<ExtKeywor
 
     while consumed < header.ext_size {
         let mut key_length_buf = vec![0_u8; EXT_KEYWORD_LENGTH];
-        consumed += match file.read_exact(&mut key_length_buf) {
+        consumed += match input.read_exact(&mut key_length_buf) {
             Ok(_) => EXT_KEYWORD_LENGTH,
             Err(_) => break,
         };
@@ -180,7 +179,7 @@ pub fn read_ext_header(mut file: &File, header: &Header) -> Result<Vec<ExtKeywor
         // entire length of keyword block: tag, data, kwhdr & padding
         let key_length = bytes_to_i32(&key_length_buf, header.header_endianness).unwrap() as usize;
         let mut key_buf = vec![0_u8; key_length-EXT_KEYWORD_LENGTH];
-        consumed += match file.read_exact(&mut key_buf) {
+        consumed += match input.read_exact(&mut key_buf) {
             Ok(_) => key_length-EXT_KEYWORD_LENGTH,
             Err(_) => break,
         };
@@ -353,14 +352,14 @@ pub fn parse_header(data: &[u8]) -> Result<Header> {
 }
 
 /// Reads the main header from a file.
-pub fn read_header(mut file: &File) -> Result<Header> {
-    match file.seek(SeekFrom::Start(COMMON_HEADER_OFFSET as u64)) {
+pub fn read_header<R: Read + Seek>(mut input: R) -> Result<Header> {
+    match input.seek(SeekFrom::Start(COMMON_HEADER_OFFSET as u64)) {
         Ok(x) => x,
         Err(_) => return Err(Error::HeaderSeekError),
     };
 
     let mut header_data = vec![0_u8; COMMON_HEADER_SIZE];
-    let n = match file.read(&mut header_data) {
+    let n = match input.read(&mut header_data) {
         Ok(x) => x,
         Err(_) => return Err(Error::FileReadError),
     };
@@ -426,14 +425,14 @@ fn parse_type_code(v: &[u8], endianness: Endianness) -> Result<TypeCode> {
 }
 
 /// Reads the adjunct header from a type 1000 file.
-pub fn read_type1000_adjunct_header(mut file: &File, header: &Header) -> Result<Type1000Adjunct> {
-    match file.seek(SeekFrom::Start(ADJUNCT_HEADER_OFFSET as u64)) {
+pub fn read_type1000_adjunct_header<R: Read + Seek>(mut input: R, header: &Header) -> Result<Type1000Adjunct> {
+    match input.seek(SeekFrom::Start(ADJUNCT_HEADER_OFFSET as u64)) {
         Ok(x) => x,
         Err(_) => return Err(Error::AdjunctHeaderSeekError),
     };
 
     let mut data = vec![0_u8; ADJUNCT_HEADER_SIZE];
-    let n = match file.read(&mut data) {
+    let n = match input.read(&mut data) {
         Ok(x) => x,
         Err(_) => return Err(Error::FileReadError),
     };
@@ -455,14 +454,14 @@ pub fn read_type1000_adjunct_header(mut file: &File, header: &Header) -> Result<
 }
 
 /// Reads the adjunct header from a type 2000 file.
-pub fn read_type2000_adjunct_header(mut file: &File, header: &Header) -> Result<Type2000Adjunct> {
-    match file.seek(SeekFrom::Start(ADJUNCT_HEADER_OFFSET as u64)) {
+pub fn read_type2000_adjunct_header<R: Read + Seek>(mut input: R, header: &Header) -> Result<Type2000Adjunct> {
+    match input.seek(SeekFrom::Start(ADJUNCT_HEADER_OFFSET as u64)) {
         Ok(x) => x,
         Err(_) => return Err(Error::AdjunctHeaderSeekError),
     };
 
     let mut data = vec![0_u8; ADJUNCT_HEADER_SIZE];
-    let n = match file.read(&mut data) {
+    let n = match input.read(&mut data) {
         Ok(x) => x,
         Err(_) => return Err(Error::FileReadError),
     };
